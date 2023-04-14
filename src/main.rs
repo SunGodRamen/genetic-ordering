@@ -138,6 +138,43 @@ fn cycle_crossover(parent1: &str, parent2: &str) -> String {
     offspring.into_iter().collect()
 }
 
+// Partially Mapped Crossover (PMX)
+fn pmx(parent1: &str, parent2: &str) -> String {
+    let mut rng = thread_rng();
+    let len = parent1.len();
+    let idx1 = rng.gen_range(0..len);
+    let idx2 = rng.gen_range(0..len);
+    let (min_idx, max_idx) = if idx1 < idx2 {
+        (idx1, idx2)
+    } else {
+        (idx2, idx1)
+    };
+
+    let mut offspring = vec!['\0'; len];
+    let mut mapped = vec![false; len];
+
+    // Copy the segment from parent1 to offspring
+    for i in min_idx..=max_idx {
+        offspring[i] = parent1.chars().nth(i).unwrap();
+        mapped[parent2.find(offspring[i]).unwrap()] = true;
+    }
+
+    // Map the remaining characters from parent2 to offspring
+    for i in 0..len {
+        if i < min_idx || i > max_idx {
+            let mut idx = i;
+            while mapped[idx] {
+                idx = parent1.find(parent2.chars().nth(idx).unwrap()).unwrap();
+            }
+            offspring[i] = parent2.chars().nth(idx).unwrap();
+            mapped[idx] = true;
+        }
+    }
+
+    offspring.into_iter().collect()
+}
+
+
 // Mutation
 fn mutate(ordering: &mut Vec<char>) {
     let mut rng = thread_rng();
@@ -160,10 +197,10 @@ fn optimize_keyboard(text: &str) -> String {
         while new_population.len() < POPULATION_SIZE {
             let parent1 = tournament_selection(&population, text, tournament_size);
             let parent2 = tournament_selection(&population, text, tournament_size);
-
-            let mut offspring: Vec<char> = row_exchange_crossover(&parent1, &parent2).chars().collect();
+    
+            let mut offspring: Vec<char> = pmx(&parent1, &parent2).chars().collect();
             mutate(&mut offspring);
-
+    
             new_population.push(offspring.into_iter().collect());
         }
 
@@ -187,6 +224,7 @@ fn optimize_keyboard(text: &str) -> String {
 
     population.into_iter().min_by_key(|ordering| fitness(ordering, text)).unwrap()
 }
+
 
 fn main() {
     let directory = "./training-data";

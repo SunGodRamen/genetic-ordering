@@ -32,8 +32,7 @@ Genetic Algorithm
 details:
  - randomly select 15 orderings (species) for the initial population
  - run the 15 species in parrallel
- - use Tournament Selection to reproduce
- - every 20 generations, merge segments of the top 5 performing species together using row exchange crossover
+ - When performing crossover, ensure that the offspring always have the same length as the parents and contain all the characters from the original set, without repetition (use Partially Mapped Crossover - PMX)
  - every 50 generations, remove 8 of the lowest performing species and replace them with random sequences
 
 ## Termination
