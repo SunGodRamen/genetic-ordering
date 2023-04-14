@@ -1,0 +1,41 @@
+### Problem
+Given a collection of text, find an ordering of keyboard keys that minimizes the total travel distance while reading the text linearly and matching each character to the ordering by traversing the ordering from beginning to end, and then back from end to beginning.
+
+# The travel distance is defined as follows:
+
+When a character from the text is matched to the character in the ordering, the next character in the text is to be matched.
+If the next character in the text is the same as the last matched character, the travel distance is 0.
+If the current text character and the current character checked in the ordering are not the same, the next character in the ordering is checked, and the travel distance is increased by 1.
+When the last character in the ordering is reached, the ordering is traversed backward to the beginning.
+The goal is to find the optimal character ordering that minimizes the total travel distance.
+
+## Input:
+A directory of text-documents containing English letters, spaces, and punctuation (unshifted, us-ansi keyboard input)
+Character Set:
+ - English letters: a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z
+ - Spaces: " "
+ - Punctuation: ', ',', -, ., \, /, :, =, [, ], `,
+ - Numbers: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+ - (other characters can be ignored)
+
+## Output:
+An optimized ordering of the English alphabet as a string, such that the total travel distance while reading the text linearly is minimized.
+
+# Constraints:
+Each text file's content has a length of at least 1 and at most 8^8 characters
+
+## Tools
+Rust, Docker
+
+### Implementation:
+Genetic Algorithm
+details:
+ - randomly select 15 orderings (species) for the initial population
+ - run the 15 species in parrallel
+ - use Tournament Selection to reproduce
+ - every 20 generations, merge segments of the top 5 performing species together using row exchange crossover
+ - every 50 generations, remove 8 of the lowest performing species and replace them with random sequences
+
+## Termination
+1000 generations
+
