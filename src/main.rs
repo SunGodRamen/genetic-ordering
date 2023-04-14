@@ -45,14 +45,19 @@ fn find_char_distance(ordering: &str, c1: char, c2: char) -> usize {
     let idx2 = ordering.find(c2).unwrap_or(0);
     let len = ordering.len();
 
+    if idx2 == 0 {
+        return 16 * len;
+    }
+
     let distance = if idx1 >= idx2 {
         idx1 - idx2
     } else {
         len - (idx2 - idx1)
     };
 
-    distance
+    distance * 4
 }
+
 
 fn fitness(ordering: &str, text: &str) -> usize {
     let mut total_distance = 0;
@@ -104,6 +109,17 @@ fn tournament_selection(population: &[String], text: &str, k: usize) -> String {
     best_ordering.to_string()
 }
 
+// Row exchange crossover
+fn row_exchange_crossover(parent1: &str, parent2: &str) -> String {
+    let mut rng = thread_rng();
+    let crossover_point = rng.gen_range(1..parent1.len());
+
+    let parent1_part = &parent1[..crossover_point];
+    let parent2_part = &parent2[crossover_point..];
+
+    format!("{}{}", parent1_part, parent2_part)
+}
+
 fn cycle_crossover(parent1: &str, parent2: &str) -> String {
     let mut offspring = vec!['\0'; parent1.len()];
     let mut visited = vec![false; parent1.len()];
@@ -145,7 +161,7 @@ fn optimize_keyboard(text: &str) -> String {
             let parent1 = tournament_selection(&population, text, tournament_size);
             let parent2 = tournament_selection(&population, text, tournament_size);
 
-            let mut offspring: Vec<char> = cycle_crossover(&parent1, &parent2).chars().collect();
+            let mut offspring: Vec<char> = row_exchange_crossover(&parent1, &parent2).chars().collect();
             mutate(&mut offspring);
 
             new_population.push(offspring.into_iter().collect());
