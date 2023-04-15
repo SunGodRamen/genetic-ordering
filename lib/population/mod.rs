@@ -5,9 +5,16 @@ use crate::fitness::fitness;
 
 fn create_random_ordering(character_set: &str) -> String {
   let mut rng = thread_rng();
-  let mut characters: Vec<char> = character_set.chars().collect();
-  characters.shuffle(&mut rng);
-  characters.into_iter().collect()
+
+  // Split the character set into pairs
+  let pairs: Vec<&str> = character_set.as_bytes().chunks(2).map(|chunk| std::str::from_utf8(chunk).unwrap()).collect();
+
+  // Shuffle the pairs
+  let mut shuffled_pairs: Vec<&str> = pairs.clone();
+  shuffled_pairs.shuffle(&mut rng);
+
+  // Flatten the shuffled pairs back into a single string
+  shuffled_pairs.concat()
 }
 
 pub fn initialize_population(population_size: usize, character_set: &str) -> Vec<String> {

@@ -6,7 +6,7 @@ use key_character_scan_genome::input::{read_input};
 const POPULATION_SIZE: usize = 32;
 const GENERATIONS: usize = 240;
 const TOURNAMENT_SIZE: usize = 8;
-const CHARACTER_SET: &str = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ01!2@3#4$5%6^7&8*9(0)<.,>-_\\|/?:;=+[{]}`'\"~";
+const CHARACTER_SET: &str = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ1!2@3#4$5%6^7&8*9(0)<.,>-_\\|/?:;=+[{]}`'\"~";
 
 // Genetic algorithm
 fn optimize_keyboard(text: &str) -> String {
