@@ -4,7 +4,10 @@ use glob::glob;
 use std::io::Read;
 use rand::{seq::SliceRandom, thread_rng};
 
-const POPULATION_SIZE: usize = 15;
+const POPULATION_SIZE: usize = 32;
+const GENERATIONS: usize = 240;
+const TOURNAMENT_SIZE: usize = 8;
+const CHARACTER_SET: &str = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ 0(1!2@3#4$5%6^7&8*9),<.>-_\\|/?:;=+[{]}`'\"~";
 
 fn is_valid_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c.is_whitespace() || ".,-\\/;=[]`".contains(c)
@@ -80,7 +83,7 @@ fn fitness(ordering: &str, text: &str) -> usize {
 
 fn create_random_ordering() -> String {
     let mut rng = thread_rng();
-    let mut characters: Vec<char> = "abcdefghijklmnopqrstuvwxyz 0123456789,.-\\/:;=[]`".chars().collect();
+    let mut characters: Vec<char> = CHARACTER_SET.chars().collect();
     characters.shuffle(&mut rng);
     characters.into_iter().collect()
 }
@@ -186,17 +189,14 @@ fn mutate(ordering: &mut Vec<char>) {
 
 // Genetic algorithm
 fn optimize_keyboard(text: &str) -> String {
-    let generations = 1000;
-    let tournament_size = 3;
-
     let mut population = initialize_population();
 
-    for generation in 0..generations {
+    for generation in 0..GENERATIONS {
         let mut new_population = Vec::with_capacity(POPULATION_SIZE);
 
         while new_population.len() < POPULATION_SIZE {
-            let parent1 = tournament_selection(&population, text, tournament_size);
-            let parent2 = tournament_selection(&population, text, tournament_size);
+            let parent1 = tournament_selection(&population, text, TOURNAMENT_SIZE);
+            let parent2 = tournament_selection(&population, text, TOURNAMENT_SIZE);
     
             let mut offspring: Vec<char> = pmx(&parent1, &parent2).chars().collect();
             mutate(&mut offspring);
@@ -224,7 +224,6 @@ fn optimize_keyboard(text: &str) -> String {
 
     population.into_iter().min_by_key(|ordering| fitness(ordering, text)).unwrap()
 }
-
 
 fn main() {
     let directory = "./training-data";
