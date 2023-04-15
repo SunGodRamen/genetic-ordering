@@ -7,7 +7,7 @@ use rand::{seq::SliceRandom, thread_rng};
 const POPULATION_SIZE: usize = 32;
 const GENERATIONS: usize = 240;
 const TOURNAMENT_SIZE: usize = 8;
-const CHARACTER_SET: &str = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ 0(1!2@3#4$5%6^7&8*9),<.>-_\\|/?:;=+[{]}`'\"~";
+const CHARACTER_SET: &str = "aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ01!2@3#4$5%6^7&8*9(0)<.,>-_\\|/?:;=+[{]}`'\"~";
 
 fn is_valid_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || c.is_whitespace() || ".,-\\/;=[]`".contains(c)
@@ -177,6 +177,63 @@ fn pmx(parent1: &str, parent2: &str) -> String {
     offspring.into_iter().collect()
 }
 
+fn pmx_pair_indices(parent1: &str, parent2: &str) -> String {
+    let parent1_indices = to_indices(parent1);
+    let parent2_indices = to_indices(parent2);
+    let len = parent1_indices.len();
+    let pair_len = len / 2;
+    let mut rng = thread_rng();
+    let idx1 = rng.gen_range(0..pair_len);
+    let idx2 = rng.gen_range(0..pair_len);
+    let (min_idx, max_idx) = if idx1 < idx2 {
+        (idx1 * 2, idx2 * 2)
+    } else {
+        (idx2 * 2, idx1 * 2)
+    };
+
+    let mut offspring_indices = vec![0; len];
+    let mut mapped = vec![false; len];
+
+    for i in (min_idx..=max_idx).step_by(2) {
+        offspring_indices[i] = parent1_indices[i];
+        offspring_indices[i + 1] = parent1_indices[i + 1];
+        mapped[parent2_indices[i]] = true;
+        mapped[parent2_indices[i + 1]] = true;
+    }
+
+    for i in (0..len).step_by(2) {
+        if i < min_idx || i > max_idx {
+            let mut idx = i;
+            while mapped[idx] {
+                let parent2_idx = parent2_indices[idx];
+                idx = parent1_indices.iter().position(|&x| x == parent2_idx).unwrap();
+            }
+            offspring_indices[i] = parent2_indices[idx];
+            offspring_indices[i + 1] = parent2_indices[idx + 1];
+            mapped[idx] = true;
+            mapped[idx + 1] = true;
+        }
+    }
+
+    from_indices(&offspring_indices)
+}
+
+fn to_indices(ordering: &str) -> Vec<usize> {
+    let mut indices = vec![0; CHARACTER_SET.len()];
+    for (i, c) in ordering.chars().enumerate() {
+        let idx = CHARACTER_SET.find(c).unwrap();
+        indices[idx] = i;
+    }
+    indices
+}
+
+fn from_indices(indices: &[usize]) -> String {
+    let mut ordering = vec!['\0'; CHARACTER_SET.len()];
+    for (i, &idx) in indices.iter().enumerate() {
+        ordering[idx % CHARACTER_SET.len()] = CHARACTER_SET.chars().nth(i).unwrap();
+    }
+    ordering.into_iter().collect()
+}
 
 // Mutation
 fn mutate(ordering: &mut Vec<char>) {
@@ -198,7 +255,7 @@ fn optimize_keyboard(text: &str) -> String {
             let parent1 = tournament_selection(&population, text, TOURNAMENT_SIZE);
             let parent2 = tournament_selection(&population, text, TOURNAMENT_SIZE);
     
-            let mut offspring: Vec<char> = pmx(&parent1, &parent2).chars().collect();
+            let mut offspring: Vec<char> = pmx_pair_indices(&parent1, &parent2).chars().collect();
             mutate(&mut offspring);
     
             new_population.push(offspring.into_iter().collect());
