@@ -1,82 +1,27 @@
 use rand::Rng;
 use rand::{thread_rng};
+use std::collections::HashMap;
 
-pub fn row_exchange_crossover(parent1: &str, parent2: &str) -> String {
+// Performs partially matched crossover (PMX) on two parents using pair indices.
+// The function takes two parent strings and a character set string and returns the offspring string.
+pub fn pmx_pair_indices(parent1: &str, parent2: &str, character_set: &str) -> Result<String, String> {
+    let parent1_indices = to_indices(parent1, character_set)?;
+    let parent2_indices = to_indices(parent2, character_set)?;    
+    println!("parent1_indices: {:?}", parent1_indices);
+    println!("parent2_indices: {:?}", parent2_indices);
+
+    let len = parent1_indices.len();
+    let pair_len = len / 2;
     let mut rng = thread_rng();
-    let crossover_point = rng.gen_range(1..parent1.len());
-  
-    let parent1_part = &parent1[..crossover_point];
-    let parent2_part = &parent2[crossover_point..];
-  
-    format!("{}{}", parent1_part, parent2_part)
-}
-  
-pub fn cycle_crossover(parent1: &str, parent2: &str) -> String {
-    let mut offspring = vec!['\0'; parent1.len()];
-    let mut visited = vec![false; parent1.len()];
-  
-    let mut start_idx = 0;
-    while start_idx < parent1.len() && visited[start_idx] == false {
-        let mut idx = start_idx;
-        while !visited[idx] {
-            visited[idx] = true;
-            offspring[idx] = parent1.chars().nth(idx).unwrap();
-            idx = parent2.find(offspring[idx]).unwrap_or(0);
-        }
-        start_idx += 1;
-    }
-  
-    offspring.into_iter().collect()
-}
-  
-pub fn pmx(parent1: &str, parent2: &str) -> String {
-    let mut rng = thread_rng();
-    let len = parent1.len();
-    let idx1 = rng.gen_range(0..len);
-    let idx2 = rng.gen_range(0..len);
+    let idx1 = rng.gen_range(0..(len - 1) / 2) * 2;
+    let idx2 = rng.gen_range(0..(len - 1) / 2) * 2;
     let (min_idx, max_idx) = if idx1 < idx2 {
         (idx1, idx2)
     } else {
         (idx2, idx1)
-    };
-  
-    let mut offspring = vec!['\0'; len];
-    let mut mapped = vec![false; len];
-  
-    // Copy the segment from parent1 to offspring
-    for i in min_idx..=max_idx {
-        offspring[i] = parent1.chars().nth(i).unwrap();
-        mapped[parent2.find(offspring[i]).unwrap()] = true;
-    }
-  
-    // Map the remaining characters from parent2 to offspring
-    for i in 0..len {
-        if i < min_idx || i > max_idx {
-            let mut idx = i;
-            while mapped[idx] {
-                idx = parent1.find(parent2.chars().nth(idx).unwrap()).unwrap();
-            }
-            offspring[i] = parent2.chars().nth(idx).unwrap();
-            mapped[idx] = true;
-        }
-    }
-  
-    offspring.into_iter().collect()
-}
+    };    
 
-pub fn pmx_pair_indices(parent1: &str, parent2: &str, character_set: &str) -> String {
-    let parent1_indices = to_indices(parent1, character_set);
-    let parent2_indices = to_indices(parent2, character_set);
-    let len = parent1_indices.len();
-    let pair_len = len / 2;
-    let mut rng = thread_rng();
-    let idx1 = rng.gen_range(0..pair_len);
-    let idx2 = rng.gen_range(0..pair_len);
-    let (min_idx, max_idx) = if idx1 < idx2 {
-        (idx1 * 2, idx2 * 2)
-    } else {
-        (idx2 * 2, idx1 * 2)
-    };
+    println!("min_idx: {}, max_idx: {}", min_idx, max_idx);
 
     let mut offspring_indices = vec![0; len];
     let mut mapped = vec![false; len];
@@ -88,36 +33,81 @@ pub fn pmx_pair_indices(parent1: &str, parent2: &str, character_set: &str) -> St
         mapped[parent2_indices[i + 1]] = true;
     }
 
+    println!("offspring_indices after first loop: {:?}", offspring_indices);
+    println!("mapped after first loop: {:?}", mapped);
+
+    let mapping = build_mapping(min_idx, max_idx, &parent1_indices, &parent2_indices);
+
     for i in (0..len).step_by(2) {
         if i < min_idx || i > max_idx {
             let mut idx = i;
-            while mapped[idx] {
-                let parent2_idx = parent2_indices[idx];
-                idx = parent1_indices.iter().position(|&x| x == parent2_idx).unwrap();
-            }
+            println!("Before get_mapped_index: {}", idx);
+            idx = get_mapped_index(idx, &mapping, 0);
+            println!("After get_mapped_index: {}", idx);
+    
             offspring_indices[i] = parent2_indices[idx];
             offspring_indices[i + 1] = parent2_indices[idx + 1];
             mapped[idx] = true;
             mapped[idx + 1] = true;
         }
     }
+    
+    println!("offspring_indices after second loop: {:?}", offspring_indices);
 
-    from_indices(&offspring_indices, character_set)
-  }
+    println!("offspring_indices before from_indices: {:?}", offspring_indices);
+    Ok(from_indices(&offspring_indices, character_set))
+}
 
-fn to_indices(ordering: &str, character_set: &str) -> Vec<usize> {
+fn build_mapping(min_idx: usize, max_idx: usize, parent1_indices: &[usize], parent2_indices: &[usize]) -> HashMap<usize, usize> {
+    let mut mapping = HashMap::new();
+    for i in (min_idx..=max_idx).step_by(2) {
+        println!("Mapping {} -> {}", parent2_indices[i], parent1_indices[i]);
+        println!("Mapping {} -> {}", parent2_indices[i + 1], parent1_indices[i + 1]);
+        mapping.insert(parent2_indices[i], parent1_indices[i]);
+        mapping.insert(parent2_indices[i + 1], parent1_indices[i + 1]);
+    }
+    mapping
+}
+
+fn get_mapped_index(mut idx: usize, mapped: &HashMap<usize, usize>, recursion_depth: usize) -> usize {
+    if recursion_depth >= mapped.len() {
+        panic!("Circular reference detected");
+    }
+    
+    if let Some(&mapped_idx) = mapped.get(&idx) {
+        return get_mapped_index(mapped_idx, mapped, recursion_depth + 1);
+    }
+    
+    idx
+}
+
+fn to_indices(ordering: &str, character_set: &str) -> Result<Vec<usize>, String> {
     let mut indices = vec![0; character_set.len()];
     for (i, c) in ordering.chars().enumerate() {
-        let idx = character_set.find(c).unwrap();
-        indices[idx] = i;
+        match character_set.find(c) {
+            Some(idx) => indices[idx] = i,
+            None => {
+                return Err(format!("Unexpected character '{}' in ordering string", c));
+            }
+        }
     }
-    indices
+    Ok(indices)
 }
 
 fn from_indices(indices: &[usize], character_set: &str) -> String {
     let mut ordering = vec!['\0'; character_set.len()];
     for (i, &idx) in indices.iter().enumerate() {
-        ordering[idx % character_set.len()] = character_set.chars().nth(i).unwrap();
+        println!("i: {}, idx: {}", i, idx);
+        ordering[idx] = character_set.chars().nth(i).unwrap();
     }
     ordering.into_iter().collect()
 }
+
+// Mutation
+pub fn mutate(ordering: &mut Vec<char>, character_set: &str) {
+    let mut rng = thread_rng();
+    let idx1 = rng.gen_range(0..ordering.len());
+    let idx2 = rng.gen_range(0..ordering.len());
+  
+    ordering.swap(idx1, idx2);
+  }
