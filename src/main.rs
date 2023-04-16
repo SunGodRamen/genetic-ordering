@@ -42,13 +42,19 @@ fn optimize_keyboard(text: &str) -> Result<String, String> {
         // Keep generating offspring until the new population is full
         while new_population.len() < POPULATION_SIZE {
             // Select two parents using tournament selection
-            let parent1 = tournament_selection(&population, text, TOURNAMENT_SIZE, CHARACTER_SET);
-            let parent2 = tournament_selection(&population, text, TOURNAMENT_SIZE, CHARACTER_SET);
-    
+            let mut parent1 = tournament_selection(&population, text, TOURNAMENT_SIZE, CHARACTER_SET);
+            let mut parent2 = tournament_selection(&population, text, TOURNAMENT_SIZE, CHARACTER_SET);
+            
+            while parent1 == parent2 {
+                parent2 = tournament_selection(&population, text, TOURNAMENT_SIZE, CHARACTER_SET);
+            }
+            
             // Create offspring using PMX crossover and mutate them
             let mut offspring: Vec<char> = pmx_pair_indices(&parent1, &parent2, CHARACTER_SET)?.chars().collect();
             println!("pmx done");
-            mutate(&mut offspring, CHARACTER_SET);
+            if generation % 4000 == 0 {
+                mutate(&mut offspring, CHARACTER_SET);
+            }
             println!("mutate done");
     
             // Add the offspring to the new population
