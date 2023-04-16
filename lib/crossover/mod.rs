@@ -1,3 +1,4 @@
+//lib/crossover/mod.rs
 use rand::Rng;
 use rand::{thread_rng};
 use std::collections::HashMap;
@@ -5,11 +6,13 @@ use std::collections::HashMap;
 // Performs partially matched crossover (PMX) on two parents using pair indices.
 // The function takes two parent strings and a character set string and returns the offspring string.
 pub fn pmx_pair_indices(parent1: &str, parent2: &str, character_set: &str) -> Result<String, String> {
+    // Convert the parent strings to a vector of indices corresponding to the characters in the character set
     let parent1_indices = to_indices(parent1, character_set)?;
     let parent2_indices = to_indices(parent2, character_set)?;    
     println!("parent1_indices: {:?}", parent1_indices);
     println!("parent2_indices: {:?}", parent2_indices);
 
+    // Select a random pair of indices to use for PMX crossover
     let len = parent1_indices.len();
     let pair_len = len / 2;
     let mut rng = thread_rng();
@@ -23,6 +26,7 @@ pub fn pmx_pair_indices(parent1: &str, parent2: &str, character_set: &str) -> Re
 
     println!("min_idx: {}, max_idx: {}", min_idx, max_idx);
 
+    // Perform PMX crossover on the selected indices
     let mut offspring_indices = vec![0; len];
     let mut mapped = vec![false; len];
 
@@ -54,6 +58,7 @@ pub fn pmx_pair_indices(parent1: &str, parent2: &str, character_set: &str) -> Re
     
     println!("offspring_indices after second loop: {:?}", offspring_indices);
 
+    // Convert the offspring indices back to the original character set and return the offspring string
     println!("offspring_indices before from_indices: {:?}", offspring_indices);
     Ok(from_indices(&offspring_indices, character_set))
 }
@@ -69,9 +74,10 @@ fn build_mapping(min_idx: usize, max_idx: usize, parent1_indices: &[usize], pare
     mapping
 }
 
+// Recursively gets the mapped index for PMX crossover
 fn get_mapped_index(mut idx: usize, mapped: &HashMap<usize, usize>, recursion_depth: usize) -> usize {
     if recursion_depth >= mapped.len() {
-        panic!("Circular reference detected");
+        panic!("Circular reference detected, recursion_depth: {}/{}", recursion_depth, mapped.len());
     }
     
     if let Some(&mapped_idx) = mapped.get(&idx) {
@@ -81,6 +87,7 @@ fn get_mapped_index(mut idx: usize, mapped: &HashMap<usize, usize>, recursion_de
     idx
 }
 
+// Converts a string to a vector of indices corresponding to the characters in the character set
 fn to_indices(ordering: &str, character_set: &str) -> Result<Vec<usize>, String> {
     let mut indices = vec![0; character_set.len()];
     for (i, c) in ordering.chars().enumerate() {
@@ -94,6 +101,7 @@ fn to_indices(ordering: &str, character_set: &str) -> Result<Vec<usize>, String>
     Ok(indices)
 }
 
+// Converts a vector of indices to a string using the original character set
 fn from_indices(indices: &[usize], character_set: &str) -> String {
     let mut ordering = vec!['\0'; character_set.len()];
     for (i, &idx) in indices.iter().enumerate() {
@@ -103,11 +111,11 @@ fn from_indices(indices: &[usize], character_set: &str) -> String {
     ordering.into_iter().collect()
 }
 
-// Mutation
+// Mutates a genetic algorithm population by swapping two elements
 pub fn mutate(ordering: &mut Vec<char>, character_set: &str) {
     let mut rng = thread_rng();
     let idx1 = rng.gen_range(0..ordering.len());
     let idx2 = rng.gen_range(0..ordering.len());
   
     ordering.swap(idx1, idx2);
-  }
+}

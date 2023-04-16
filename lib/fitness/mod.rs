@@ -1,3 +1,4 @@
+//lib/fitness/mod.rs
 use std::io::{self, Write};
 use rand::{seq::SliceRandom, thread_rng};
 
@@ -23,10 +24,22 @@ pub fn fitness(ordering: &str, text: &str) -> usize {
         io::stdout().flush().unwrap(); // Flush the output buffer to display the text
     }
 
-    // Log when the fitness calculation reaches the end of the training data
     total_distance
 }
 
+pub fn tournament_selection(population: &[String], text: &str, k: usize, character_set: &str) -> String {
+    // Randomly select k orderings from the population
+    let mut rng = thread_rng();
+    let contestants = population.choose_multiple(&mut rng, k).collect::<Vec<_>>();
+  
+    // Find the best ordering among the contestants
+    let best_ordering = contestants
+        .iter()
+        .min_by_key(|ordering| fitness(ordering, text))
+        .unwrap();
+  
+    best_ordering.to_string()
+  }
 
 fn find_char_distance(ordering: &str, c1: char, c2: char) -> usize {
     let idx1 = ordering.find(c1).unwrap_or(0);
@@ -45,18 +58,3 @@ fn find_char_distance(ordering: &str, c1: char, c2: char) -> usize {
 
     distance * 2
 }
-
-pub fn tournament_selection(population: &[String], text: &str, k: usize, character_set: &str) -> String {
-    // Randomly select k orderings from the population
-    let mut rng = thread_rng();
-    let contestants = population.choose_multiple(&mut rng, k).collect::<Vec<_>>();
-  
-    // Find the best ordering among the contestants
-    let best_ordering = contestants
-        .iter()
-        .min_by_key(|ordering| fitness(ordering, text))
-        .unwrap();
-  
-    best_ordering.to_string()
-  }
-  

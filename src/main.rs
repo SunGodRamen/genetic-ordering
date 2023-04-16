@@ -1,3 +1,4 @@
+//src/main.rs
 // Import necessary modules
 use key_character_scan_genome::input::{read_input};
 use key_character_scan_genome::population::{initialize_population};
@@ -9,6 +10,18 @@ const POPULATION_SIZE: usize = 4;
 const GENERATIONS: usize = 24;
 const TOURNAMENT_SIZE: usize = 2;
 const CHARACTER_SET: &str = "aAbBcCdDeE";
+
+fn main() {
+    // Set the input directory and read the training data
+    let directory = "./training-data";
+    let text = read_input(directory, CHARACTER_SET);
+
+    // Run the genetic algorithm and print the optimized keyboard ordering
+    match optimize_keyboard(&text) {
+        Ok(optimized_ordering) => println!("Optimized ordering: {}", optimized_ordering),
+        Err(e) => eprintln!("Error: {}", e),
+    }
+}
 
 // Define the main genetic algorithm function
 fn optimize_keyboard(text: &str) -> Result<String, String> {
@@ -64,17 +77,4 @@ fn optimize_keyboard(text: &str) -> Result<String, String> {
 
     // Return the best ordering found after all generations
     Ok(population.into_iter().min_by_key(|ordering| fitness(ordering, text)).unwrap())
-}
-
-
-fn main() {
-    // Set the input directory and read the training data
-    let directory = "./training-data";
-    let text = read_input(directory, CHARACTER_SET);
-
-    // Run the genetic algorithm and print the optimized keyboard ordering
-    match optimize_keyboard(&text) {
-        Ok(optimized_ordering) => println!("Optimized ordering: {}", optimized_ordering),
-        Err(e) => eprintln!("Error: {}", e),
-    }
 }

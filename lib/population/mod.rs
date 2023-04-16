@@ -1,3 +1,4 @@
+//lib/population/mod.rs
 use rand::{seq::SliceRandom, thread_rng};
 
 fn create_random_ordering(character_set: &str) -> String {
@@ -23,4 +24,3 @@ pub fn initialize_population(population_size: usize, character_set: &str) -> Vec
 
   population
 }
-
